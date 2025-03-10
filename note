@@ -1,0 +1,70 @@
+#!/bin/bash
+# todo: multi line text
+FILE="/tmp/note"
+DATE=$(date +"%Y-%m-%d_%H-%M-%S") 
+TIME=$(date +"%I:%M %p")
+HABEO="$HOME/.note/"
+format=false
+
+# command-line options
+while getopts ":dhsf" option; do
+    case $option in
+        d)
+            echo "File deleted"
+            rm -f "$FILE"  
+            exit 0
+            ;;
+
+	h)
+	   echo "Note
+Written by: Zimblo	   
+Text saved in /tmp/note
+Ctrl-D to save/exit
+Flags:
+-(d)elete file
+-(h)elp
+-(s)ave file
+-(f)ormatting toggle\" "      
+	   exit 0
+	   ;;
+	s)
+	   
+	   cp "$FILE" "$HABEO/note_$DATE.txt"
+	   echo "Saved to $HABEO"
+	   exit 0
+	   # option to save file here would be useful
+	   ;;
+	f)
+	   format=false
+	   ;;
+        \?)
+            echo "Invalid option: -$OPTARG" >&2
+	   echo "run 'note -h' for help"
+            exit 1
+            ;;
+    esac
+done
+
+# Check if the file exists
+if [ -f "$FILE" ]; then
+    sed -n 'p' "$FILE"  
+else
+    echo "File created."
+    # echo $(date) >> "$FILE"
+    # date file once at BOF
+    
+    #echo "Text appends to $FILE (Ctrl+D to save):"
+
+    touch "$FILE"  
+fi
+
+if [ "$format" = true ]; then
+    # date at time of entry
+    echo $(date +"%I:%M") >> "$FILE"
+    cat >> "$FILE"
+    echo "----------" >> "$FILE"
+fi
+
+if [ "$format" = false ]; then
+    cat >> "$FILE"
+fi
