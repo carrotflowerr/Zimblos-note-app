@@ -1,70 +1,108 @@
 #!/bin/bash
 # todo: multi line text
 FILE="/tmp/note"
-DATE=$(date +"%Y-%m-%d_%H-%M-%S") 
-TIME=$(date +"%I:%M %p")
-HABEO="$HOME/.note/"
-format=false
+HABEO="$HOME/.note"
+TIME=$(date +"%I:%M:%S")
+NOTECOUNT=$(ls "$HABEO" 2>/dev/null | wc -l)
+localEditor="emacsclient -c"
+#NAMECHANGE=false
+# requires:
+# fzf
+# ed
+# stopwords
 
-# command-line options
-while getopts ":dhsf" option; do
+# Command-line options
+while getopts ":dhsfeFoE" option; do
     case $option in
-        d)
+
+	d)
             echo "File deleted"
-            rm -f "$FILE"  
+            rm -f "$FILE"
             exit 0
             ;;
 
 	h)
-	   echo "Note
-Written by: Zimblo	   
-Text saved in /tmp/note
-Ctrl-D to save/exit
-Flags:
--(d)elete file
--(h)elp
--(s)ave file
--(f)ormatting toggle\" "      
-	   exit 0
-	   ;;
+            echo "Usage: note [OPTION]"
+            echo "Options:"
+            echo "  -d      Delete the note file"
+	    echo "  -s      Save file to $HABEO. (automatic naming)"
+	    echo "  -f      Name file and save."
+	    echo "  -D      Date file at start"
+	    echo "  -h      Show help message"
+            echo "  -e      Edit the note file"	    
+	    echo "  -E      Edit from note directory"            
+	    echo "  -o      Print from note directory"
+	    exit 0
+            ;;
+
 	s)
-	   
-	   cp "$FILE" "$HABEO/note_$DATE.txt"
-	   echo "Saved to $HABEO"
-	   exit 0
-	   # option to save file here would be useful
+	    FILENAME=$(tr '[:upper:]' '[:lower:]' < /tmp/note | tr -s '[:space:]' '\n' | tr -d '[:punct:]' | grep -vwFf ~/.note/.stopwords.txt | grep -E '.{5,}' | sort | uniq -c | sort -nrk1,1 | awk '{print $2}' | head -n1)
+	    
+	   mv "$FILE" "$HABEO/$FILENAME"
+            
+	   echo "Saved to $HABEO/$FILENAME"
+           exit 0
+	    
 	   ;;
+	D)
+            DATE=true
+	    echo "Formatting toggled: $FORMAT"
+            ;;
+
+	e)
+            ed "$FILE"
+	    # TODO: make use localEditor
+	    exit 0
+            ;;
+
 	f)
-	   format=false
-	   ;;
+
+	    if [ -n "$2" ]; then  # Check if $2 is not empty
+		FILENAME="$2"
+	    else
+		echo "Error: No filename provided."
+		exit 1  
+	    fi
+            mv "$FILE" "$HABEO/$FILENAME"
+            echo "Saved to $HABEO/$FILENAME"
+            exit 0
+	    ;;
+
+	o)
+	    # this should sort by date
+	    cd "$HABEO"
+	    file=$(fzf)
+	    echo "$file"
+	    cat "$file"
+	    
+	    exit 0
+	    ;;
+
+	E)
+	    cd "$HABEO"
+	    ed $(fzf)
+	    exit 0
+	    ;;
         \?)
             echo "Invalid option: -$OPTARG" >&2
-	   echo "run 'note -h' for help"
+            echo "Run 'note -h' for help"
             exit 1
             ;;
     esac
 done
 
-# Check if the file exists
+# make sure file exists
 if [ -f "$FILE" ]; then
-    sed -n 'p' "$FILE"  
+    sed -n 'p' "$FILE"
 else
     echo "File created."
-    # echo $(date) >> "$FILE"
-    # date file once at BOF
-    
-    #echo "Text appends to $FILE (Ctrl+D to save):"
-
-    touch "$FILE"  
+    #echo "$(date)" >> "$FILE"
 fi
 
-if [ "$format" = true ]; then
-    # date at time of entry
-    echo $(date +"%I:%M") >> "$FILE"
+# Append to the file with or without date
+if [ "$DATE" = true ]; then
+    echo "$(date +"%I:%M")" >> "$FILE"
     cat >> "$FILE"
-    echo "----------" >> "$FILE"
-fi
-
-if [ "$format" = false ]; then
+else
     cat >> "$FILE"
 fi
