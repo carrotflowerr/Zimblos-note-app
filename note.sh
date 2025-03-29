@@ -4,7 +4,9 @@ FILE="/tmp/note"
 HABEO="$HOME/.note"
 TIME=$(date +"%I:%M:%S")
 NOTECOUNT=$(ls "$HABEO" 2>/dev/null | wc -l)
-localEditor="emacsclient -c"
+localEditor="ed"
+BACKUP="~/Documents"
+
 #NAMECHANGE=false
 # requires:
 # fzf
@@ -12,7 +14,7 @@ localEditor="emacsclient -c"
 # stopwords
 
 # Command-line options
-while getopts ":dhsfeFoE" option; do
+while getopts ":dhsfeFoEA" option; do
     case $option in
 
 	d)
@@ -32,12 +34,13 @@ while getopts ":dhsfeFoE" option; do
             echo "  -e      Edit the note file"	    
 	    echo "  -E      Edit from note directory"            
 	    echo "  -o      Print from note directory"
+	    echo "  -A      Archive $HABEO"
 	    exit 0
             ;;
 
 	s)
 	    FILENAME=$(tr '[:upper:]' '[:lower:]' < /tmp/note | tr -s '[:space:]' '\n' | tr -d '[:punct:]' | grep -vwFf ~/.note/.stopwords.txt | grep -E '.{5,}' | sort | uniq -c | sort -nrk1,1 | awk '{print $2}' | head -n1)
-	    
+	   
 	   mv "$FILE" "$HABEO/$FILENAME"
             
 	   echo "Saved to $HABEO/$FILENAME"
@@ -50,7 +53,7 @@ while getopts ":dhsfeFoE" option; do
             ;;
 
 	e)
-            ed "$FILE"
+	    ed "$FILE"
 	    # TODO: make use localEditor
 	    exit 0
             ;;
@@ -83,7 +86,18 @@ while getopts ":dhsfeFoE" option; do
 	    ed $(fzf)
 	    exit 0
 	    ;;
-        \?)
+
+	A)
+	    cd "$HABEO"
+	    tar -czf archive.tar.gz *
+	    #cp archive.tar.gz "$BACKUP/archive.tar.gz"
+	    cp archive.tar.gz ~/Documents/archive.tar.gz
+	  
+	    echo "Archived to archive.tar.gz"
+	    echo "Saved to $BACKUP"
+	    exit 0
+	    ;;
+	\?)
             echo "Invalid option: -$OPTARG" >&2
             echo "Run 'note -h' for help"
             exit 1
