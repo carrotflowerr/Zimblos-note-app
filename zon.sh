@@ -9,6 +9,18 @@
 # ed
 # stopwords file
 
+auto_name() {
+    fname=$(tr '[:upper:]' '[:lower:]' < "$FILE" |
+        tr -s '[:space:]' '\n' |
+        tr -d '[:punct:]' |
+        grep -vwFf "$STOPWORDS" 2>/dev/null |
+        grep -E '.{5,}' |
+        sort | uniq -c | sort -nrk1 | awk '{print $2}' | head -n1)
+    [ -z "$fname" ] && fname="note_$(date +"$TIME_FORMAT")"
+    echo "$fname"
+}
+
+
 FILE="/tmp/note"
 HABEO="$HOME/.note"
 TIME=$(date +"%I:%M:%S")
@@ -46,7 +58,7 @@ while getopts ":dhsfeFPEAiX" option; do
 
 	s)
 
-	    FILENAME=$(tr '[:upper:]' '[:lower:]' < /tmp/note | tr -s '[:space:]' '\n' | tr -d '[:punct:]' | grep -vwFf ~/.note/.stopwords.txt | grep -E '.{5,}' | sort | uniq -c | sort -nrk1,1 | awk '{print $2}' | head -n1)
+	    FILENAME=$(auto_name)
 
 	   echo "Saving to: $HABEO/$FILENAME"
 	    
@@ -97,10 +109,7 @@ while getopts ":dhsfeFPEAiX" option; do
 	A)
 	    cd "$HABEO"
 	    tar -czf archive.tar.gz *
-	    #cp archive.tar.gz "$BACKUP/archive.tar.gz"
-	    cp archive.tar.gz ~/Documents/noteArchive.tar.gz
-	    cp archive.tar.gz /mnt/Third/noteArchive.tar.gz
-    	    cp archive.tar.gz /mnt/Second/noteArchive.tar.gz
+
 
 	    echo "Archived to archive.tar.gz"
 	    echo "Saved to $BACKUP, /mnt/Second/, /mnt/Third/"

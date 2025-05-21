@@ -1,4 +1,4 @@
-# Zimblo's Note App
+# Zimblo's Own Note App (ZON)
 hyper minimal note script. 
 
 Inspired by the TempleOS note function,
@@ -11,30 +11,54 @@ The idea:
 * deletes on system reboot unless saved
 * used for storing **low importance data**
 
+# requires:
+- fzf
+- ed
+- stopwords file
 
+# Configure
 
-# Options
+Add the following to the -X option if your gpg is configured for text mode
+
+``` 
+
+GPG_TTY=$(tty)
+export GPG_TTY
+gpg --pinentry-mode loopback --symmetric "$chosenFile"
+
 ```
 
-$  note -h
-Usage: note [OPTION]
+`~/.gnupg/gnu.conf`
+use-agent
+pinentry-mode loopback
+
+`~/.gnupg/gpg-agent.conf`
+allow-loopback-pinentry
+
+# Options
+
+```
+$ zon -h
+Usage: zon [OPTION]
 Options:
   -d      Delete the note file
-  -s      Save file to /home/user/.note. (automatic naming)
+  -s      Save file to /home/shell/.note. (automatic naming)
   -f      Name file and save.
   -h      Show help message
   -e      Edit the note file
   -E      Edit from note directory
-  -o      Print from note directory
-  -A      Archive /home/user/.note
-  
-  ```
+  -P      Print from note directory
+  -i      Run ispell on the buffer
+  -X      Encrypt
+  -w      Open stopwords
+  -A      Archive /home/shell/.note
+```
 
+`
+
+# Opts
 By default, it opens a temporary buffer. 
-
-It's based around the command 
-`cat >> /tmp/note`
-Which by itself is usable. 
+`/tmp/note`
 
 `-d` will delete this temporary buffer.
 
@@ -60,3 +84,4 @@ It is especially useful on window managers. I bind to `$mod+n`
 
 Automatic file naming is done by measuring the frequency of the words in the file. It then sorts out words found in `stopwords.` This file has the 100 most common english words. Adding words to this file will sort them out.
 
+`zoni.sh` is the same, but it uses a simple interface instead of op commands.

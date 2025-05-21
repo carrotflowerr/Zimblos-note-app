@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Simple text-menu interface for notes
+# Simple text-menu interface for zon
 
 FILE="/tmp/note"
 HABEO="$HOME/.note"
