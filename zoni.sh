@@ -1,42 +1,90 @@
 #!/bin/bash
 
-# Simple text-menu interface for zon
+# Hyper-minimal note manager
+# Written by: Zimblo
+# Source:  github.com/carrotflowerr
 
-FILE="/tmp/note"
 HABEO="$HOME/.note"
 BACKUP="$HOME/Documents"
 STOPWORDS="$HABEO/.stopwords.txt"
 TIME_FORMAT="%Y%m%d_%H%M%S"
+EDITOR_CMD="ed"
+#EDITOR_CMD="${EDITOR:-ed}"
+STATE_FILE="$HABEO/.buffers"
 
-# Ensure environment
 mkdir -p "$HABEO"
-touch "$FILE"
+
+BUFFERS=()
+CURRENT=0
+
+# Load state
+if [ -f "$STATE_FILE" ]; then
+    mapfile -t STATE_LINES < "$STATE_FILE"
+    BUFFERS=("${STATE_LINES[@]:0:${#STATE_LINES[@]}-1}")
+    CURRENT=${STATE_LINES[-1]}
+else
+    FILE="/tmp/note_$(date +%s%N)"
+    touch "$FILE"
+    BUFFERS+=("$FILE")
+    CURRENT=1
+fi
+
+persist_state() {
+    printf "%s\n" "${BUFFERS[@]}" > "$STATE_FILE"
+    echo "$CURRENT" >> "$STATE_FILE"
+}
+
+new_buffer() {
+    FILE="/tmp/note_$(date +%s%N)"
+    touch "$FILE"
+    BUFFERS+=("$FILE")
+    CURRENT=${#BUFFERS[@]}
+    persist_state
+}
+
+file_check() {
+    for i in "${!BUFFERS[@]}"; do
+        f="${BUFFERS[$i]}"
+        if [ -s "$f" ]; then
+            mark="[X]"
+        else
+            mark="[]"
+        fi
+        if [ $((i+1)) -eq $CURRENT ]; then
+            printf "*%s* " "$mark"
+        else
+            printf "%s " "$mark"
+        fi
+    done
+    echo
+}
 
 display_menu() {
     clear
     echo "Zimblo's Own Notes"
-    echo "---------"
-    echo "e) Edit buffer ($FILE)"
-    echo "s) Save note (auto name)"
-    echo "f) Save note (manual name)"
-    echo "E) Edit note archive"
-    echo "P) Print note archive"
-    echo "i) Spell-check note"
+    file_check
+    echo "---------------------"
+    echo "e) Edit"
+    echo "s) Save (auto)"
+    echo "f) Save (manual)"
     echo "d) Delete buffer"
-    echo "X) Encrypt a file from archive"
-    echo "w) Edit stopwords.txt"
-    echo "A) Archive all notes"
-    echo "q) Quit "
-    #read -p "> " $NULL
-    
+    echo "n) New tmp buffer"
+    echo "---------------------"
+    echo "E) Edit archive"
+    echo "P) Print archive"
+    echo "---------------------"
+    echo "i) Spell-check"
+    echo "X) Encrypt file"
+    echo "---------------------"
+    echo "w) Edit stopwords"
+    echo "A) Archive notes"
+    echo "q) Quit"
 }
 
-pause() {
-    read -p "Press Enter to continue..."
-}
+pause() { read -p "Press Enter to continue..."; }
 
 auto_name() {
-    fname=$(tr '[:upper:]' '[:lower:]' < "$FILE" |
+    fname=$(tr '[:upper:]' '[:lower:]' < "${BUFFERS[CURRENT-1]}" |
         tr -s '[:space:]' '\n' |
         tr -d '[:punct:]' |
         grep -vwFf "$STOPWORDS" 2>/dev/null |
@@ -46,84 +94,66 @@ auto_name() {
     echo "$fname"
 }
 
+name_manual() {
+    read -p "Enter filename: " name
+    mv -i "${BUFFERS[CURRENT-1]}" "$HABEO/$name.note"
+    touch "${BUFFERS[CURRENT-1]}"
+    persist_state
+    echo "Saved as $HABEO/$name.note"
+}
+
+edit_buffer() { $EDITOR_CMD "${BUFFERS[CURRENT-1]}"; persist_state; }
+save_auto() {
+    name=$(auto_name)
+    echo "Save as $name? (y/n/a)"
+    IFS= read -rsn1 c
+    if [ "$c" = 'y' ]; then
+        mv -i "${BUFFERS[CURRENT-1]}" "$HABEO/$name.note"
+        touch "${BUFFERS[CURRENT-1]}"
+        echo "Saved as $HABEO/$name.note"
+    elif [ "$c" = 'n' ]; then
+        name_manual
+    elif [ "$c" = 'a' ]; then
+        echo "$name" >> "$STOPWORDS"
+        echo "Appended $name to stopwords"
+    else
+        echo "?"
+    fi
+    persist_state
+    pause
+}
+
+# I know this is aids.
+save_manual() { name_manual; pause; }
+edit_archive() { cd "$HABEO"; chosenFile=$(ls --sort time | fzf); [ -n "$chosenFile" ] && $EDITOR_CMD "$chosenFile"; pause; }
+print_archive() { cd "$HABEO"; chosenFile=$(ls --sort time | fzf); [ -n "$chosenFile" ] && less "$chosenFile"; pause; }
+spell_check() { ispell "${BUFFERS[CURRENT-1]}"; pause; }
+delete_buffer() { rm -i "${BUFFERS[CURRENT-1]}"; touch "${BUFFERS[CURRENT-1]}"; echo "Current note reset."; persist_state; pause; }
+encrypt_file() { chosenFile=$(ls --sort time | fzf); GPG_TTY=$(tty); export GPG_TTY; gpg --pinentry-mode loopback --symmetric "$chosenFile"; rm -i "$chosenFile"; }
+edit_stopwords() { $EDITOR_CMD "$STOPWORDS"; }
+archive_notes() { cd "$HABEO"; tar -czf archive.tar.gz *; cp archive.tar.gz ~/Documents/noteArchive.tar.gz; echo "Archived."; pause; }
+
 while true; do
     display_menu
     IFS= read -rsn1 choice
-#    echo "$choice"
     case "$choice" in
-        e)
-            ed "$FILE"
-            ;;
-
-        s)
-            name=$(auto_name)
-            mv -i "$FILE" "$HABEO/$name"
-            touch "$FILE"
-            echo "Saved as $HABEO/$name"
-            pause
-            ;;
-
-	w)
-	    ${EDITOR:-ed} "$STOPWORDS"
-	    ;;
-	X)
-	    chosenFile=$(fzf)
-	    GPG_TTY=$(tty)
-	    export GPG_TTY
-	    gpg --pinentry-mode loopback --symmetric "$chosenFile"
-	    # requires config
-	    rm -i "$chosenFile"
-	    ;;
-	
-	f)
-            read -p "Enter filename: " name
-            mv -i "$FILE" "$HABEO/$name"
-            touch "$FILE"
-            echo "Saved as $HABEO/$name"
-            pause
-            ;;
-
-	E)
-            cd "$HABEO"
-            chosenFile=$(fzf)
-            [ -n "$chosenFile" ] && ${EDITOR:-ed} "$chosenFile"
-            pause
-            ;;
-
-	P)
-            cd "$HABEO"
-            file=$(fzf)
-            [ -n "$file" ] && cat "$file"
-            pause
-            ;;
-
-	i)
-            ispell "$FILE"
-            pause
-            ;;
-
-	d)
-            rm -i "$FILE"
-            touch "$FILE"
-            echo "Current note reset."
-            pause
-            ;;
-
-	A)
-            tar -czf "$HABEO/archive_$(date +"$TIME_FORMAT").tar.gz" -C "$HABEO" .
-            cp "$HABEO"/*.tar.gz "$BACKUP" 2>/dev/null
-            echo "Archive created in $HABEO and copied to $BACKUP."
-            pause
-            ;;
-
-	q)
-            break
-            ;;
-        *)
-            echo "Invalid choice."
-            pause
-            ;;
+        e) edit_buffer ;;
+        s) save_auto ;;
+        f) save_manual ;;
+        d) delete_buffer ;;
+        n) new_buffer ;;
+        E) edit_archive ;;
+        P) print_archive ;;
+        i) spell_check ;;
+        X) encrypt_file ;;
+        w) edit_stopwords ;;
+        A) archive_notes ;;
+        [1-9])
+            if [ "$choice" -le "${#BUFFERS[@]}" ]; then CURRENT=$choice; persist_state; fi ;;
+        q) persist_state; break ;;
+        *) echo "Invalid choice."; pause ;;
     esac
+
 done
 
 exit 0
