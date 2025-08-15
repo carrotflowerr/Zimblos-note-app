@@ -42,6 +42,10 @@ allow-loopback-pinentry
 # Note
 Requires fzf
 
+zoni is a binary built with shc. zoni.sh is the source.
+shc -f zoni.sh -o zoni
+
+
 The note file is a bash script. I reccomending putting it in your path. ex `/usr/bin`
 
 It does not require root access. 
@@ -52,5 +56,3 @@ Automatic file naming is done by measuring the frequency of the words in the fil
 
 `zoni.sh` is the same, but it uses a simple interface instead of op commands.
 
-There is a binary included built with shc.
-shc -f zoni.sh -o zoni
