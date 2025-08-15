@@ -7,10 +7,15 @@ Emacs *scratch* buffer
 
 # The idea:
 * (almost) no secondary prompts
- Functions instantaneously. Does not require you to save, confirm, or
- name the file.
+
+Functions instantaneously.
+
+ Does not require you to save, confirm, or name the file.
 * Operates in /tmp/ 
+
 deletes on system reboot unless saved.
+
+
 used for storing **low importance data**
 
 # Functions
@@ -47,7 +52,11 @@ allow-loopback-pinentry
 # Note
 Requires fzf
 
-zoni is a binary built with shc. zoni.sh is the source.
+zoni is a binary built with shc. 
+
+zoni.sh is the source.
+
+
 shc -f zoni.sh -o zoni
 
 
@@ -61,7 +70,7 @@ Automatic file naming is done by measuring the frequency of the words in the fil
 
 `zoni.sh` is the same, but it uses a simple interface instead of op commands.
 
-<<<<<<< HEAD
-=======
+
+
 See [nb](https://github.com/xwmx/nb), a similar project.
->>>>>>> 6eaae160a6f7ae09667d97d94aaae4719db281c6
+
