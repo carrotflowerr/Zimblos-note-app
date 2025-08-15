@@ -61,3 +61,7 @@ Automatic file naming is done by measuring the frequency of the words in the fil
 
 `zoni.sh` is the same, but it uses a simple interface instead of op commands.
 
+<<<<<<< HEAD
+=======
+See [nb](https://github.com/xwmx/nb), a similar project.
+>>>>>>> 6eaae160a6f7ae09667d97d94aaae4719db281c6
