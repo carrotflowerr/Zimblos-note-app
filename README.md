@@ -20,6 +20,11 @@ used for storing **low importance data**
 * Persistent multi-buffer management
 * Under 200 lines of code
 
+# TODO
+* remove fzf as a dep
+* variable to change default file extension
+* rewrite in c
+
 # Configure
 
 Add the following to the -X option if your gpg is configured for text mode
