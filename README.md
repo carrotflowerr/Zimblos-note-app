@@ -4,6 +4,7 @@ hyper minimal note script.
 Inspired by the TempleOS note function,
 Emacs *scratch* buffer
 
+![screenshot of zoni](screenshot.png)
 
 # The idea:
 * (almost) no secondary prompts
